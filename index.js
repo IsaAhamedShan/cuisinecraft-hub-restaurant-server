@@ -28,7 +28,7 @@ await client.connect()
 const cuisineCraftHub = await client.db("cuisineCraftHub")
 const menu_collection = cuisineCraftHub.collection("menu")
 const review_collection = cuisineCraftHub.collection("review")
-
+const chef_recommendation_collection = cuisineCraftHub.collection("chefRecommend")
 
 app.get('/menu', async(req,res)=>{
   const response =menu_collection.find()
@@ -38,6 +38,12 @@ app.get('/menu', async(req,res)=>{
 app.get('/review', async(req,res)=>{
   const response =review_collection.find()
   const result = await response.toArray()
+  res.send(result)
+})
+app.get('/chef_recommendation', async(req,res)=>{
+  const response = chef_recommendation_collection.find()
+  const result = await response.toArray()
+  // console.log(result)
   res.send(result)
 })
 app.post('/verify-recaptcha', async (req, res) => {

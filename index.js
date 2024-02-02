@@ -46,12 +46,13 @@ async function run() {
       // console.log(result)
       res.send(result);
     });
-    app.get('/cartList',async(req,res)=>{
+    app.get("/cartList", async (req, res) => {
       const email = req.query.email;
-      const query = {email}
+      const query = { email };
       const dataFromDb = await cart_data.find(query).toArray();
-      res.send(dataFromDb)
-    })
+      res.send(dataFromDb);
+    });
+    //cartList finished
 
     app.post("/verify-recaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
@@ -89,6 +90,16 @@ async function run() {
       const dataFromDb = await cart_data.insertOne(cartItem);
       res.send("data inserted successfully");
     });
+
+    app.delete("/deleteCartItem/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log("have to delete cart item id: ", id);
+      const query = { _id: new ObjectId(id) };
+      const response = await cart_data.deleteOne(query);
+      // console.log("response deleted successfully.", response);
+      res.send(response)
+    });
+
     //add to cart finished
   } catch (err) {
     console.log("error is run function of index.js : ", err);

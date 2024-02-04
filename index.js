@@ -54,6 +54,10 @@ async function run() {
       res.send(dataFromDb);
     });
     //cartList finished
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
 
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
@@ -96,20 +100,22 @@ async function run() {
         email,
         username,
       };
-      console.log("userdata at /users is ",userData);
+
+      console.log("userdata at /users is ", userData);
       try {
-        console.log("Updating user details:", email, username);
+        const query = { email: email };
+        const userAlreadyExists = await userCollection.findOne(query);
+        if (!userAlreadyExists) {
+          console.log("Updating user details:", email, username);
 
-        // Perform the update operation
-        const result = await userCollection.insertOne(userData);
-
-        if (result.insertedCount === 1) {
-          // Document was inserted
-          res.status(201).send("User details inserted successfully.");
-        } else {
-          // Document was updated
-          res.status(200).send("User exists already.");
+          const result = await userCollection.insertOne(userData);
+          if (result.insertedCount === 1) {
+            res.status(201).send("User details inserted successfully.");
+          } else {
+            res.status(200).send("Error while inserting user");
+          }
         }
+        res.status(200).send("User exists already.");
       } catch (error) {
         console.error("Error occurred:", error);
         res.status(500).send("An error occurred while updating user details.");
@@ -123,6 +129,13 @@ async function run() {
       // console.log("response deleted successfully.", response);
       res.send(response);
     });
+
+    app.delete('/deleteUser/:id', async (req,res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const response = await userCollection.deleteOne(query);
+      res.send(response)
+    })
 
     //add to cart finished
   } catch (err) {

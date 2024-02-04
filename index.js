@@ -29,6 +29,7 @@ async function run() {
     const chef_recommendation_collection =
       cuisineCraftHub.collection("chefRecommend");
     const cart_data = cuisineCraftHub.collection("cart");
+    const userCollection = cuisineCraftHub.collection("user");
 
     app.get("/menu", async (req, res) => {
       const response = menu_collection.find();
@@ -54,24 +55,23 @@ async function run() {
     });
     //cartList finished
 
-    app.post("/verify-recaptcha", async (req, res) => {
+    app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
       console.log(req.body);
       try {
         const response = await axios.post(
-          "https://www.google.com/recaptcha/api/siteverify",
-          {
-            secret: "6Lfv_lgpAAAAAGL__eKMi8YiOg4Dv5klSx_Xt1J7",
-            response: recaptchaValue,
-          }
+          "https://www.google.com/recaptcha/api/siteverify?secret=6Lfv_lgpAAAAAGL__eKMi8YiOg4Dv5klSx_Xt1J7&response=" +
+            recaptchaValue
         );
 
         // Check response.success and take appropriate action
         if (response.data.success) {
           // reCAPTCHA verification successful
+          console.log("success recaptcha");
           res.status(200).json({ success: true });
         } else {
           // reCAPTCHA verification failed
+          console.log("failed recaptcha", response);
           res
             .status(400)
             .json({ success: false, error: "reCAPTCHA verification failed" });
@@ -90,14 +90,38 @@ async function run() {
       const dataFromDb = await cart_data.insertOne(cartItem);
       res.send("data inserted successfully");
     });
+    app.post("/users", async (req, res) => {
+      const { email, username } = req.body;
+      const userData = {
+        email,
+        username,
+      };
+      console.log("userdata at /users is ",userData);
+      try {
+        console.log("Updating user details:", email, username);
 
+        // Perform the update operation
+        const result = await userCollection.insertOne(userData);
+
+        if (result.insertedCount === 1) {
+          // Document was inserted
+          res.status(201).send("User details inserted successfully.");
+        } else {
+          // Document was updated
+          res.status(200).send("User exists already.");
+        }
+      } catch (error) {
+        console.error("Error occurred:", error);
+        res.status(500).send("An error occurred while updating user details.");
+      }
+    });
     app.delete("/deleteCartItem/:id", async (req, res) => {
       const id = req.params.id;
-      console.log("have to delete cart item id: ", id);
+      // console.log("have to delete cart item id: ", id);
       const query = { _id: new ObjectId(id) };
       const response = await cart_data.deleteOne(query);
       // console.log("response deleted successfully.", response);
-      res.send(response)
+      res.send(response);
     });
 
     //add to cart finished

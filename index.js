@@ -101,6 +101,7 @@ async function run() {
         username,
       };
 
+
       console.log("userdata at /users is ", userData);
       try {
         const query = { email: email };
@@ -121,6 +122,19 @@ async function run() {
         res.status(500).send("An error occurred while updating user details.");
       }
     });
+    app.patch('/users/admin/:id', async (req,res)=>{
+      const id = req.params.id;
+      console.log("🚀 ~ app.patch ~ id:", id)
+      
+      const filter = {_id: new ObjectId(id)}
+      const updateDoc = {
+        $set:{
+          role:'admin'
+        }
+      }
+      const response = await userCollection.updateOne(filter,updateDoc)
+      res.send(response)
+    })
     app.delete("/deleteCartItem/:id", async (req, res) => {
       const id = req.params.id;
       // console.log("have to delete cart item id: ", id);

@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const axios = require("axios");
+const jwt = require('jsonwebtoken');
 app.use(cors());
 app.use(express.json());
 // const helmet = require("helmet");
@@ -122,6 +123,20 @@ async function run() {
         res.status(500).send("An error occurred while updating user details.");
       }
     });
+    app.post('/jwt', async(req,res)=>{
+      const user = req.body
+      jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{
+        expiresIn:'1hr'
+      },(err,token)=>{
+        if(err){
+          res.status(500).send({message:"error while creating token"})
+        }
+        else if(token){
+          res.status(200).send({token})
+        }
+      })
+      
+    })
     app.patch('/users/admin/:id', async (req,res)=>{
       const id = req.params.id;
       console.log("🚀 ~ app.patch ~ id:", id)

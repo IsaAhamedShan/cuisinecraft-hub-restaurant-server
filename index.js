@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const axios = require("axios");
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 app.use(cors());
 app.use(express.json());
 // const helmet = require("helmet");
@@ -32,6 +32,31 @@ async function run() {
     const cart_data = cuisineCraftHub.collection("cart");
     const userCollection = cuisineCraftHub.collection("user");
 
+    //middleware
+    const verifyToken = (req, res, next) => {
+      console.log("inside verify token");
+      if (!req.headers.authorization) {
+        res
+          .status(401)
+          .send({ message: "Forbidden access.Authorization not found" });
+      }
+      const accessToken = req.headers.authorization.split(" ")[1];
+      // console.log(accessToken)
+      jwt.verify(
+        accessToken,
+        process.env.ACCESS_TOKEN_SECRET,
+        (error, decoded) => {
+          if (error) {
+            console.log("error in verify token", error);
+          } else if (decoded) {
+            req.decoded = decoded;
+          }
+        }
+      );
+
+      next();
+    };
+
     app.get("/menu", async (req, res) => {
       const response = menu_collection.find();
       const result = await response.toArray();
@@ -55,9 +80,29 @@ async function run() {
       res.send(dataFromDb);
     });
     //cartList finished
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyToken, async (req, res) => {
+      // const headers = req.headers;
+      // console.log("🚀 ~ app.get ~ headers:", headers);
       const result = await userCollection.find().toArray();
       res.send(result);
+    });
+    app.get("/user/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        res.status(403).send({ message: "Unathorized access" });
+      }
+      let admin = false;
+      const query = {
+        email: email,
+        role:'admin'
+      };
+      const user = await userCollection.findOne(query);
+      if (user) {
+        admin = true;
+      }
+      console.log(admin)
+
+      res.send({ admin });
     });
 
     app.post("/verifyRecaptcha", async (req, res) => {
@@ -102,7 +147,6 @@ async function run() {
         username,
       };
 
-
       console.log("userdata at /users is ", userData);
       try {
         const query = { email: email };
@@ -123,33 +167,36 @@ async function run() {
         res.status(500).send("An error occurred while updating user details.");
       }
     });
-    app.post('/jwt', async(req,res)=>{
-      const user = req.body
-      jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{
-        expiresIn:'1hr'
-      },(err,token)=>{
-        if(err){
-          res.status(500).send({message:"error while creating token"})
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      jwt.sign(
+        user,
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: "1hr",
+        },
+        (err, token) => {
+          if (err) {
+            res.status(500).send({ message: "error while creating token" });
+          } else if (token) {
+            res.status(200).send({ token });
+          }
         }
-        else if(token){
-          res.status(200).send({token})
-        }
-      })
-      
-    })
-    app.patch('/users/admin/:id', async (req,res)=>{
+      );
+    });
+    app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
-      console.log("🚀 ~ app.patch ~ id:", id)
-      
-      const filter = {_id: new ObjectId(id)}
+      console.log("🚀 ~ app.patch ~ id:", id);
+
+      const filter = { _id: new ObjectId(id) };
       const updateDoc = {
-        $set:{
-          role:'admin'
-        }
-      }
-      const response = await userCollection.updateOne(filter,updateDoc)
-      res.send(response)
-    })
+        $set: {
+          role: "admin",
+        },
+      };
+      const response = await userCollection.updateOne(filter, updateDoc);
+      res.send(response);
+    });
     app.delete("/deleteCartItem/:id", async (req, res) => {
       const id = req.params.id;
       // console.log("have to delete cart item id: ", id);
@@ -159,12 +206,12 @@ async function run() {
       res.send(response);
     });
 
-    app.delete('/deleteUser/:id', async (req,res)=>{
+    app.delete("/deleteUser/:id", async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) };
       const response = await userCollection.deleteOne(query);
-      res.send(response)
-    })
+      res.send(response);
+    });
 
     //add to cart finished
   } catch (err) {

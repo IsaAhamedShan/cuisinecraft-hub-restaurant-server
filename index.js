@@ -50,10 +50,28 @@ async function run() {
             console.log("error in verify token", error);
           } else if (decoded) {
             req.decoded = decoded;
+            console.log("decoded", decoded);
           }
         }
       );
 
+      next();
+    };
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded?.email;
+
+      
+      const query = {
+        email: email,
+        role: "admin",
+      };
+      const user = await userCollection.findOne(query);
+      // console.log(user)
+      if (user) {
+        req.admin = true;
+      } else {
+        req.admin = false;
+      }
       next();
     };
 
@@ -80,30 +98,39 @@ async function run() {
       res.send(dataFromDb);
     });
     //cartList finished
-    app.get("/users", verifyToken, async (req, res) => {
-      // const headers = req.headers;
-      // console.log("🚀 ~ app.get ~ headers:", headers);
-      const result = await userCollection.find().toArray();
-      res.send(result);
+    app.get("/users", verifyToken,verifyAdmin, async (req, res) => {
+      
+      if (req.admin === false) {
+        // console.log("false");
+        res.status(401).send({ message: "unauthorized access" });
+      } else {
+        // console.log("true");
+        const result = await userCollection.find().toArray();
+        res.send(result);
+      }
     });
-    app.get("/user/admin/:email", verifyToken, async (req, res) => {
-      const email = req.params.email;
-      if (email !== req.decoded.email) {
-        res.status(403).send({ message: "Unathorized access" });
-      }
-      let admin = false;
-      const query = {
-        email: email,
-        role:'admin'
-      };
-      const user = await userCollection.findOne(query);
-      if (user) {
-        admin = true;
-      }
-      console.log(admin)
+    app.get(
+      "/user/admin/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        if(req.admin === false){
+          console.log("false")
+          res.status(401).send({message:"unauthorized access"});
+        }
+        else{
+          console.log("true")
+        }
+        const email = req.params.email;
+        if (email !== req.decoded.email) {
+          res.status(403).send({ message: "forbidden access" });
+        }
+        // console.log(admin)
+        // console.log("req from /user/admin :",req)
 
-      res.send({ admin });
-    });
+        res.send({ message: "got it" });
+      }
+    );
 
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;

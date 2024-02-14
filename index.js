@@ -31,6 +31,7 @@ async function run() {
       cuisineCraftHub.collection("chefRecommend");
     const cart_data = cuisineCraftHub.collection("cart");
     const userCollection = cuisineCraftHub.collection("user");
+    
 
     //middleware
     const verifyToken = (req, res, next) => {
@@ -60,17 +61,14 @@ async function run() {
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded?.email;
 
-      
       const query = {
         email: email,
         role: "admin",
       };
       const user = await userCollection.findOne(query);
       // console.log(user)
-      if (user) {
-        req.admin = true;
-      } else {
-        req.admin = false;
+      if (!user) {
+        return res.status(403).send({ message: 'forbidden access' });
       }
       next();
     };
@@ -98,8 +96,7 @@ async function run() {
       res.send(dataFromDb);
     });
     //cartList finished
-    app.get("/users", verifyToken,verifyAdmin, async (req, res) => {
-      
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       if (req.admin === false) {
         // console.log("false");
         res.status(401).send({ message: "unauthorized access" });
@@ -114,21 +111,17 @@ async function run() {
       verifyToken,
       verifyAdmin,
       async (req, res) => {
-        if(req.admin === false){
-          console.log("false")
-          res.status(401).send({message:"unauthorized access"});
-        }
-        else{
-          console.log("true")
-        }
         const email = req.params.email;
-        if (email !== req.decoded.email) {
+        if (email !== req.decoded?.email) {
           res.status(403).send({ message: "forbidden access" });
         }
-        // console.log(admin)
-        // console.log("req from /user/admin :",req)
-
-        res.send({ message: "got it" });
+        const query = { email: email };
+        const user = await userCollection.findOne(query);
+        let admin = false;
+        if (user) {
+          admin = user?.role === 'admin';
+        }
+        res.send({ admin });
       }
     );
 
@@ -211,6 +204,12 @@ async function run() {
         }
       );
     });
+    app.post('/addItem',verifyToken,verifyAdmin, async(req,res)=>{
+const data = req.body
+console.log(data)
+const result = await menu_collection.insertOne(data)
+res.send(result)
+    })
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
       console.log("🚀 ~ app.patch ~ id:", id);
@@ -226,7 +225,6 @@ async function run() {
     });
     app.delete("/deleteCartItem/:id", async (req, res) => {
       const id = req.params.id;
-      // console.log("have to delete cart item id: ", id);
       const query = { _id: new ObjectId(id) };
       const response = await cart_data.deleteOne(query);
       // console.log("response deleted successfully.", response);

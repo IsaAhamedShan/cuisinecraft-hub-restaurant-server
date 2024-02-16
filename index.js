@@ -31,7 +31,6 @@ async function run() {
       cuisineCraftHub.collection("chefRecommend");
     const cart_data = cuisineCraftHub.collection("cart");
     const userCollection = cuisineCraftHub.collection("user");
-    
 
     //middleware
     const verifyToken = (req, res, next) => {
@@ -68,7 +67,7 @@ async function run() {
       const user = await userCollection.findOne(query);
       // console.log(user)
       if (!user) {
-        return res.status(403).send({ message: 'forbidden access' });
+        return res.status(403).send({ message: "forbidden access" });
       }
       next();
     };
@@ -119,7 +118,7 @@ async function run() {
         const user = await userCollection.findOne(query);
         let admin = false;
         if (user) {
-          admin = user?.role === 'admin';
+          admin = user?.role === "admin";
         }
         res.send({ admin });
       }
@@ -204,12 +203,12 @@ async function run() {
         }
       );
     });
-    app.post('/addItem',verifyToken,verifyAdmin, async(req,res)=>{
-const data = req.body
-console.log(data)
-const result = await menu_collection.insertOne(data)
-res.send(result)
-    })
+    app.post("/addItem", verifyToken, verifyAdmin, async (req, res) => {
+      const data = req.body;
+      console.log(data);
+      const result = await menu_collection.insertOne(data);
+      res.send(result);
+    });
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
       console.log("🚀 ~ app.patch ~ id:", id);
@@ -237,11 +236,19 @@ res.send(result)
       const response = await userCollection.deleteOne(query);
       res.send(response);
     });
+    app.delete("/deleteItem/:id",verifyToken,verifyAdmin, async(req,res)=>{
+      const id = req.params.id;
+      console.log("id in item delete ",id)
+      const query = { _id: new ObjectId(id) };
+      const result = menu_collection.deleteOne(query)
+      res.send(result)
+    })
 
     //add to cart finished
   } catch (err) {
     console.log("error is run function of index.js : ", err);
   }
+
 }
 run().catch(console.dir);
 app.get("/", (req, res) => {

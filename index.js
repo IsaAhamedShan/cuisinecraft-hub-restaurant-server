@@ -222,6 +222,25 @@ async function run() {
       const response = await userCollection.updateOne(filter, updateDoc);
       res.send(response);
     });
+    app.patch("/updateItem/:id",async(req,res)=>{
+      const id = req.params.id
+      const data = req.body;
+      console.log("🚀 ~ app.patch ~ data:", data)
+      // console.log("🚀 ~ app.patch ~ id:", id)
+      const filter = {_id : new ObjectId(id)}
+const updateDoc = {
+  $set:{
+    name: data.name,
+    recipe: data.recipe,
+    image:data.image,
+    category:data.category,
+    price:data.price
+  }
+}
+      // console.log("🚀 ~ app.patch ~ filter:", filter)
+      const result = menu_collection.updateOne(filter,updateDoc)
+      res.send(result)
+    })
     app.delete("/deleteCartItem/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };

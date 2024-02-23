@@ -31,6 +31,7 @@ async function run() {
       cuisineCraftHub.collection("chefRecommend");
     const cart_data = cuisineCraftHub.collection("cart");
     const userCollection = cuisineCraftHub.collection("user");
+    const contactUsCollection = cuisineCraftHub.collection("contactUs");
 
     //middleware
     const verifyToken = (req, res, next) => {
@@ -123,6 +124,11 @@ async function run() {
         res.send({ admin });
       }
     );
+    app.get('/contactUs', async(req,res)=>{
+      const result = await contactUsCollection.find().toArray()
+      console.log(result)
+      res.send(result)
+    })
 
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
@@ -222,25 +228,25 @@ async function run() {
       const response = await userCollection.updateOne(filter, updateDoc);
       res.send(response);
     });
-    app.patch("/updateItem/:id",async(req,res)=>{
-      const id = req.params.id
+    app.patch("/updateItem/:id", async (req, res) => {
+      const id = req.params.id;
       const data = req.body;
-      console.log("🚀 ~ app.patch ~ data:", data)
+      console.log("🚀 ~ app.patch ~ data:", data);
       // console.log("🚀 ~ app.patch ~ id:", id)
-      const filter = {_id : new ObjectId(id)}
-const updateDoc = {
-  $set:{
-    name: data.name,
-    recipe: data.recipe,
-    image:data.image,
-    category:data.category,
-    price:data.price
-  }
-}
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          name: data.name,
+          recipe: data.recipe,
+          image: data.image,
+          category: data.category,
+          price: data.price,
+        },
+      };
       // console.log("🚀 ~ app.patch ~ filter:", filter)
-      const result = menu_collection.updateOne(filter,updateDoc)
-      res.send(result)
-    })
+      const result =await menu_collection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
     app.delete("/deleteCartItem/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -255,19 +261,23 @@ const updateDoc = {
       const response = await userCollection.deleteOne(query);
       res.send(response);
     });
-    app.delete("/deleteItem/:id",verifyToken,verifyAdmin, async(req,res)=>{
-      const id = req.params.id;
-      console.log("id in item delete ",id)
-      const query = { _id: new ObjectId(id) };
-      const result = menu_collection.deleteOne(query)
-      res.send(result)
-    })
+    app.delete(
+      "/deleteItem/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        console.log("id in item delete ", id);
+        const query = { _id: new ObjectId(id) };
+        const result = menu_collection.deleteOne(query);
+        res.send(result);
+      }
+    );
 
     //add to cart finished
   } catch (err) {
     console.log("error is run function of index.js : ", err);
   }
-
 }
 run().catch(console.dir);
 app.get("/", (req, res) => {

@@ -7,6 +7,8 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 app.use(cors());
 app.use(express.json());
+
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 // const helmet = require("helmet");
 // var jwt = require("jsonwebtoken");
 // const nodemailer = require("nodemailer");
@@ -214,6 +216,25 @@ async function run() {
       console.log(data);
       const result = await menu_collection.insertOne(data);
       res.send(result);
+    });
+    app.post("/create-payment-intent", async (req, res) => {
+      const { items } = req.body;
+    const {price} = req.body;
+    const amount = parseInt(price)*100
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+        automatic_payment_methods: {
+          enabled: true,
+        },
+        payment_method_types:['card']
+      });
+    
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;

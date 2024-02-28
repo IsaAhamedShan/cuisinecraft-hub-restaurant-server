@@ -126,11 +126,11 @@ async function run() {
         res.send({ admin });
       }
     );
-    app.get('/contactUs', async(req,res)=>{
-      const result = await contactUsCollection.find().toArray()
-      console.log(result)
-      res.send(result)
-    })
+    app.get("/contactUs", async (req, res) => {
+      const result = await contactUsCollection.find().toArray();
+      console.log(result);
+      res.send(result);
+    });
 
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
@@ -219,8 +219,9 @@ async function run() {
     });
     app.post("/create-payment-intent", async (req, res) => {
       const { items } = req.body;
-    const {price} = req.body;
-    const amount = parseInt(price)*100
+      const { price } = req.body;
+      const amount = parseInt(price) * 100;//converts into cents
+      console.log(amount)
       // Create a PaymentIntent with the order amount and currency
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
@@ -229,9 +230,9 @@ async function run() {
         automatic_payment_methods: {
           enabled: true,
         },
-        payment_method_types:['card']
+        payment_method_types: ["card"],
       });
-    
+
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
@@ -265,7 +266,7 @@ async function run() {
         },
       };
       // console.log("🚀 ~ app.patch ~ filter:", filter)
-      const result =await menu_collection.updateOne(filter, updateDoc);
+      const result = await menu_collection.updateOne(filter, updateDoc);
       res.send(result);
     });
     app.delete("/deleteCartItem/:id", async (req, res) => {

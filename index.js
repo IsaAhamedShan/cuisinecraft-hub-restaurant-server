@@ -34,6 +34,7 @@ async function run() {
     const cart_data = cuisineCraftHub.collection("cart");
     const userCollection = cuisineCraftHub.collection("user");
     const contactUsCollection = cuisineCraftHub.collection("contactUs");
+    const paymentsCollection = cuisineCraftHub.collection("payments");
 
     //middleware
     const verifyToken = (req, res, next) => {
@@ -218,24 +219,32 @@ async function run() {
       res.send(result);
     });
     app.post("/create-payment-intent", async (req, res) => {
-      const { items } = req.body;
+      // const { items } = req.body;
       const { price } = req.body;
-      const amount = parseInt(price) * 100;//converts into cents
-      console.log(amount)
+      const amount = parseInt(price) * 100; //converts into cents
+      console.log("amount is ", amount);
       // Create a PaymentIntent with the order amount and currency
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
-        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
-        automatic_payment_methods: {
-          enabled: true,
-        },
+        //here we cant set payment method type and automatic payment method at the same time;
         payment_method_types: ["card"],
       });
 
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
+    });
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      // console.log(payment);
+      const paymentResult = await paymentsCollection.insertOne(payment);
+      const query = {
+        email : payment.email
+      };
+      // console.log(query)
+      const deleteRes = await cart_data.deleteMany(query);
+      res.send({ paymentResult, deleteRes });
     });
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;

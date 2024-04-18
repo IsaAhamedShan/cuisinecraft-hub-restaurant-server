@@ -70,9 +70,11 @@ async function run() {
       };
       const user = await userCollection.findOne(query);
       // console.log(user)
-      if (!user) {
-        return res.status(403).send({ message: "forbidden access" });
-      }
+
+      // if i use this then the dashboard's useAdmin calls continuously. vvi
+      // if (!user) {
+      //   return res.status(403).send({ message: "forbidden access" });
+      // }
       next();
     };
 

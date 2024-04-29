@@ -9,10 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-// const helmet = require("helmet");
-// var jwt = require("jsonwebtoken");
-// const nodemailer = require("nodemailer");
-// const cookieParser = require("cookie-parser");
+const cookieParser = require("cookie-parser");
 const port = 5000;
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.jeu0kz0.mongodb.net/?retryWrites=true&w=majority`;
@@ -37,21 +34,24 @@ async function run() {
     const paymentsCollection = cuisineCraftHub.collection("payments");
 
     //middleware
-    const verifyToken = (req, res, next) => {
-      console.log("inside verify token");
+    const verifyToken = async  (req, res, next) => {
+      console.log("Request URL:", req.originalUrl);
+      console.log("inside verify token. req.headers is: ",req.headers);
+
       if (!req.headers.authorization) {
         res
           .status(401)
           .send({ message: "Forbidden access.Authorization not found" });
       }
-      const accessToken = req.headers.authorization.split(" ")[1];
-      // console.log(accessToken)
+      const accessToken = await req.headers.authorization.split(" ")[1];
+      console.log("accesstoken:",accessToken)
       jwt.verify(
         accessToken,
         process.env.ACCESS_TOKEN_SECRET,
         (error, decoded) => {
           if (error) {
             console.log("error in verify token", error);
+            return res.status(401).send({message:"error while verifying token "})
           } else if (decoded) {
             req.decoded = decoded;
             console.log("decoded", decoded);

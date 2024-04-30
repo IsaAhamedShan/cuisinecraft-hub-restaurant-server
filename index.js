@@ -34,9 +34,9 @@ async function run() {
     const paymentsCollection = cuisineCraftHub.collection("payments");
 
     //middleware
-    const verifyToken = async  (req, res, next) => {
+    const verifyToken = async (req, res, next) => {
       console.log("Request URL:", req.originalUrl);
-      console.log("inside verify token. req.headers is: ",req.headers);
+      console.log("inside verify token. req.headers is: ", req.headers);
 
       if (!req.headers.authorization) {
         res
@@ -44,14 +44,16 @@ async function run() {
           .send({ message: "Forbidden access.Authorization not found" });
       }
       const accessToken = await req.headers.authorization.split(" ")[1];
-      console.log("accesstoken:",accessToken)
+      console.log("accesstoken:", accessToken);
       jwt.verify(
         accessToken,
         process.env.ACCESS_TOKEN_SECRET,
         (error, decoded) => {
           if (error) {
             console.log("error in verify token", error);
-            return res.status(401).send({message:"error while verifying token "})
+            return res
+              .status(401)
+              .send({ message: "error while verifying token " });
           } else if (decoded) {
             req.decoded = decoded;
             console.log("decoded", decoded);
@@ -135,6 +137,60 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/admin-stats", async (req, res) => {
+      const users = await userCollection.estimatedDocumentCount();
+      const menuItems = await menu_collection.estimatedDocumentCount();
+      const orders = await paymentsCollection.estimatedDocumentCount();
+      const revenueResult= await paymentsCollection.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalRevenue: {$sum: "$price"},
+          },
+        },
+      ]).toArray();
+      console.log("revenue Result: ", revenueResult)
+      const revenue = revenueResult.length>0 ? revenueResult[0].totalRevenue : 0;
+      res.send({
+        users,
+        menuItems,
+        orders,
+        revenue,
+      });
+    });
+
+    app.get("/sold-stats", async (req, res) => {
+      try {
+        const soldStats = await paymentsCollection.aggregate([
+          {
+            $unwind: "$menuItemId"
+          },
+          {
+            $lookup: {
+              from: "menu",
+              localField: "menuItemId",
+              foreignField: "_id",
+              as: "menuItems"
+            }
+          },
+          // {
+          //   $unwind: "$menuItems"
+          // },
+          // {
+          //   $group : {
+          //     _id: '$menuItems.categor'
+          //   }
+          // }
+        ]).toArray();
+    
+        console.log(soldStats);
+        res.send(soldStats);
+      } catch (error) {
+        console.error("Error fetching sold stats:", error);
+        res.status(500).send("Error fetching sold stats");
+      }
+    });
+    
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
       console.log(req.body);
@@ -242,7 +298,7 @@ async function run() {
       // console.log(payment);
       const paymentResult = await paymentsCollection.insertOne(payment);
       const query = {
-        email : payment.email
+        email: payment.email,
       };
       // console.log(query)
       const deleteRes = await cart_data.deleteMany(query);

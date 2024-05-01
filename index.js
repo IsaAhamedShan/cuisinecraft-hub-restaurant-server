@@ -141,16 +141,19 @@ async function run() {
       const users = await userCollection.estimatedDocumentCount();
       const menuItems = await menu_collection.estimatedDocumentCount();
       const orders = await paymentsCollection.estimatedDocumentCount();
-      const revenueResult= await paymentsCollection.aggregate([
-        {
-          $group: {
-            _id: null,
-            totalRevenue: {$sum: "$price"},
+      const revenueResult = await paymentsCollection
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              totalRevenue: { $sum: "$price" },
+            },
           },
-        },
-      ]).toArray();
-      console.log("revenue Result: ", revenueResult)
-      const revenue = revenueResult.length>0 ? revenueResult[0].totalRevenue : 0;
+        ])
+        .toArray();
+      console.log("revenue Result: ", revenueResult);
+      const revenue =
+        revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
       res.send({
         users,
         menuItems,
@@ -161,28 +164,38 @@ async function run() {
 
     app.get("/sold-stats", async (req, res) => {
       try {
-        const soldStats = await paymentsCollection.aggregate([
-          {
-            $unwind: "$menuItemId"
-          },
-          {
-            $lookup: {
-              from: "menu",
-              localField: "menuItemId",
-              foreignField: "_id",
-              as: "menuItems"
-            }
-          },
-          // {
-          //   $unwind: "$menuItems"
-          // },
-          // {
-          //   $group : {
-          //     _id: '$menuItems.categor'
-          //   }
-          // }
-        ]).toArray();
-    
+        const soldStats = await paymentsCollection
+          .aggregate([
+            {
+              $unwind: "$menuItemId",
+            },
+            {
+              $lookup: {
+                from: "menu",
+                let: { menuItemId: { $toObjectId: "$menuItemId" } },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: { $eq: ["$_id", "$$menuItemId"] },
+                    },
+                  },
+                ],
+                as: "menuItems",
+              },
+            },
+            {
+              $unwind: "$menuItems",
+            },
+            {
+              $group: {
+                _id: "$menuItems.category",
+                quantity: { $sum: 1 },
+                revenue: { $sum: "$menuItems.price" },
+              }
+            },
+          ])
+          .toArray();
+
         console.log(soldStats);
         res.send(soldStats);
       } catch (error) {
@@ -190,7 +203,7 @@ async function run() {
         res.status(500).send("Error fetching sold stats");
       }
     });
-    
+
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
       console.log(req.body);

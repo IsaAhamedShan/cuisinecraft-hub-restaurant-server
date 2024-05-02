@@ -36,7 +36,7 @@ async function run() {
     //middleware
     const verifyToken = async (req, res, next) => {
       console.log("Request URL:", req.originalUrl);
-      console.log("inside verify token. req.headers is: ", req.headers);
+      // console.log("inside verify token. req.headers is: ", req.headers);
 
       if (!req.headers.authorization) {
         res
@@ -44,7 +44,7 @@ async function run() {
           .send({ message: "Forbidden access.Authorization not found" });
       }
       const accessToken = await req.headers.authorization.split(" ")[1];
-      console.log("accesstoken:", accessToken);
+      // console.log("accesstoken:", accessToken);
       jwt.verify(
         accessToken,
         process.env.ACCESS_TOKEN_SECRET,
@@ -203,6 +203,13 @@ async function run() {
         res.status(500).send("Error fetching sold stats");
       }
     });
+    app.get("/paymentHistory/:id", async(req,res)=>{
+const email  = req.params.id;
+console.log("email is payment history",email)
+const query = {email:email}
+const result = await paymentsCollection.find(query).toArray()
+res.send(result)
+    })
 
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;

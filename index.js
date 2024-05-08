@@ -5,9 +5,32 @@ const cors = require("cors");
 const app = express();
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
-app.use(cors());
-app.use(express.json());
+const helmet = require("helmet");
+app.use(cors(
+  {
+    origin:[
+      "http://localhost:5173",
+      "https://cuisinecraft-hub-restaurant.web.app"
 
+    ],
+    credentials:true
+  }
+));
+app.use(express.json());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        frameAncestors: ["'self'"],
+        formAction: ["'self'"],
+        connectSrc: ["'self'", "https://group-study-assignment-a7832.web.app"],
+      },
+    },
+  })
+);
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const cookieParser = require("cookie-parser");
 const port = 5000;
@@ -191,7 +214,7 @@ async function run() {
                 _id: "$menuItems.category",
                 quantity: { $sum: 1 },
                 revenue: { $sum: "$menuItems.price" },
-              }
+              },
             },
           ])
           .toArray();
@@ -203,13 +226,13 @@ async function run() {
         res.status(500).send("Error fetching sold stats");
       }
     });
-    app.get("/paymentHistory/:id", async(req,res)=>{
-const email  = req.params.id;
-console.log("email is payment history",email)
-const query = {email:email}
-const result = await paymentsCollection.find(query).toArray()
-res.send(result)
-    })
+    app.get("/paymentHistory/:id", async (req, res) => {
+      const email = req.params.id;
+      console.log("email is payment history", email);
+      const query = { email: email };
+      const result = await paymentsCollection.find(query).toArray();
+      res.send(result);
+    });
 
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;

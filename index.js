@@ -55,6 +55,8 @@ async function run() {
     const userCollection = cuisineCraftHub.collection("user");
     const contactUsCollection = cuisineCraftHub.collection("contactUs");
     const paymentsCollection = cuisineCraftHub.collection("payments");
+    const reservationCollection = cuisineCraftHub.collection("reservation");
+
 
     //middleware
     const verifyToken = async (req, res, next) => {
@@ -347,6 +349,24 @@ async function run() {
       const deleteRes = await cart_data.deleteMany(query);
       res.send({ paymentResult, deleteRes });
     });
+    app.post("/reservation",async(req,res)=>{
+      const data = req.body
+      console.log("🚀 ~ app.post ~ reservation:", data);
+      try {
+        const response = await reservationCollection.insertOne(data);
+        if (response.insertedId) {
+          res.status(200).send(response); // Sending the entire response object might not be ideal
+        } else {
+          res.status(403).send({ message: "couldn't reserve" });
+        }
+      } catch (error) {
+        console.error("Error occurred while making reservation:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    })
+    
+
+
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
       console.log("🚀 ~ app.patch ~ id:", id);
@@ -360,6 +380,7 @@ async function run() {
       const response = await userCollection.updateOne(filter, updateDoc);
       res.send(response);
     });
+
     app.patch("/updateItem/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;

@@ -6,16 +6,15 @@ const app = express();
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const helmet = require("helmet");
-app.use(cors(
-  {
-    origin:[
+app.use(
+  cors({
+    origin: [
       "http://localhost:5173",
-      "https://cuisinecraft-hub-restaurant.web.app"
-
+      "https://cuisinecraft-hub-restaurant.web.app",
     ],
-    credentials:true
-  }
-));
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(
   helmet({
@@ -56,7 +55,6 @@ async function run() {
     const contactUsCollection = cuisineCraftHub.collection("contactUs");
     const paymentsCollection = cuisineCraftHub.collection("payments");
     const reservationCollection = cuisineCraftHub.collection("reservation");
-
 
     //middleware
     const verifyToken = async (req, res, next) => {
@@ -235,11 +233,11 @@ async function run() {
       const result = await paymentsCollection.find(query).toArray();
       res.send(result);
     });
-    app.get("/allBookings",async (req,res)=>{
-      const result =await reservationCollection.find().toArray();
+    app.get("/allBookings", async (req, res) => {
+      const result = await reservationCollection.find().toArray();
       // console.log("all booking result",result)
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
@@ -354,8 +352,8 @@ async function run() {
       const deleteRes = await cart_data.deleteMany(query);
       res.send({ paymentResult, deleteRes });
     });
-    app.post("/reservation",async(req,res)=>{
-      const data = req.body
+    app.post("/reservation", async (req, res) => {
+      const data = req.body;
       console.log("🚀 ~ app.post ~ reservation:", data);
       try {
         const response = await reservationCollection.insertOne(data);
@@ -368,9 +366,31 @@ async function run() {
         console.error("Error occurred while making reservation:", error);
         res.status(500).send({ message: "Internal server error" });
       }
-    })
-
-
+    });
+    app.patch("/confirmReservation", async (req, res) => {
+      try {
+        const id = req.body.itemId;
+        console.log("🚀 ~ app.post ~ id:", id);
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            "reservationData.status": "confirmed",
+          },
+        };
+        const response = await reservationCollection.updateOne(
+          filter,
+          updateDoc
+        );
+        console.log(response)
+        if (response.modifiedCount===1) {
+          res.status(200).send(response);
+        } else {
+          res.status(403).send(response);
+        }
+      } catch (err) {
+        res.status(500).send(response);
+      }
+    });
 
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;

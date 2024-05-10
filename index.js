@@ -235,6 +235,11 @@ async function run() {
       const result = await paymentsCollection.find(query).toArray();
       res.send(result);
     });
+    app.get("/allBookings",async (req,res)=>{
+      const result =await reservationCollection.find().toArray();
+      // console.log("all booking result",result)
+      res.send(result)
+    })
 
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
@@ -364,7 +369,7 @@ async function run() {
         res.status(500).send({ message: "Internal server error" });
       }
     })
-    
+
 
 
     app.patch("/users/admin/:id", async (req, res) => {

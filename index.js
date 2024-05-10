@@ -238,6 +238,21 @@ async function run() {
       // console.log("all booking result",result)
       res.send(result);
     });
+    app.get("/myBookings", async (req, res) => {
+      try {
+        const email = req.query.email;
+        console.log("mybooking email", email);
+        const query = {
+          "reservationData.userEmail": email,
+        };
+        const response = await reservationCollection.find(query).toArray();
+        console.log(response)
+        res.send(response);
+      } catch (error) {
+        console.error("Error fetching my bookings:", error);
+        res.status(500).send("Internal server error");
+      }
+    });
 
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
@@ -367,10 +382,11 @@ async function run() {
         res.status(500).send({ message: "Internal server error" });
       }
     });
+
     app.patch("/confirmReservation", async (req, res) => {
       try {
         const id = req.body.itemId;
-        console.log("🚀 ~ app.post ~ id:", id);
+        // console.log("🚀 ~ app.post ~ id:", id);
         const filter = { _id: new ObjectId(id) };
         const updateDoc = {
           $set: {
@@ -381,8 +397,8 @@ async function run() {
           filter,
           updateDoc
         );
-        console.log(response)
-        if (response.modifiedCount===1) {
+        console.log(response);
+        if (response.modifiedCount === 1) {
           res.status(200).send(response);
         } else {
           res.status(403).send(response);
@@ -451,12 +467,31 @@ async function run() {
         res.send(result);
       }
     );
+    app.delete("/deleteReservation", async(req,res)=>{
+      try{
+        const id = req.query._id;
+        console.log("delete id in /deleteReservation: ",id)
+        const query = {_id: new ObjectId(id)};
+        const response = await reservationCollection.deleteOne(query);
+        console.log("res in delete reservation:",response);
+        if(response.deletedCount>0){
+          res.status(200).send(response)
+        }
+        else{
+          res.status(405).send({message:"internal server error"})
+        }
+      }
+      catch(err){
+        res.status(405).send({message:"internal server error"})
+      }
+    })
 
     //add to cart finished
   } catch (err) {
     console.log("error is run function of index.js : ", err);
   }
 }
+
 run().catch(console.dir);
 app.get("/", (req, res) => {
   res.send("server is running!!");

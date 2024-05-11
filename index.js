@@ -257,11 +257,10 @@ async function run() {
 
     app.get("/paymentHistoryPurchaseDetails", async (req, res) => {
       const items = req.query.items;
-      console.log(items);
+      // console.log(items);
       const itemList = items.split(",");
       const objectIdArray = itemList.map(id => new ObjectId(id.trim()));
 
-      
       // console.log(item)
       const response = await menu_collection.find({
         _id:{

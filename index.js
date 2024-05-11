@@ -254,6 +254,24 @@ async function run() {
       }
     });
 
+
+    app.get("/paymentHistoryPurchaseDetails", async (req, res) => {
+      const items = req.query.items;
+      console.log(items);
+      const itemList = items.split(",");
+      const objectIdArray = itemList.map(id => new ObjectId(id.trim()));
+
+      
+      // console.log(item)
+      const response = await menu_collection.find({
+        _id:{
+          $in:objectIdArray
+        }
+      }).toArray()
+      // console.log(response)
+      res.send(response);
+    });
+
     app.post("/verifyRecaptcha", async (req, res) => {
       const { recaptchaValue } = req.body;
       console.log(req.body);
@@ -467,24 +485,22 @@ async function run() {
         res.send(result);
       }
     );
-    app.delete("/deleteReservation", async(req,res)=>{
-      try{
+    app.delete("/deleteReservation", async (req, res) => {
+      try {
         const id = req.query._id;
-        console.log("delete id in /deleteReservation: ",id)
-        const query = {_id: new ObjectId(id)};
+        console.log("delete id in /deleteReservation: ", id);
+        const query = { _id: new ObjectId(id) };
         const response = await reservationCollection.deleteOne(query);
-        console.log("res in delete reservation:",response);
-        if(response.deletedCount>0){
-          res.status(200).send(response)
+        console.log("res in delete reservation:", response);
+        if (response.deletedCount > 0) {
+          res.status(200).send(response);
+        } else {
+          res.status(405).send({ message: "internal server error" });
         }
-        else{
-          res.status(405).send({message:"internal server error"})
-        }
+      } catch (err) {
+        res.status(405).send({ message: "internal server error" });
       }
-      catch(err){
-        res.status(405).send({message:"internal server error"})
-      }
-    })
+    });
 
     //add to cart finished
   } catch (err) {

@@ -226,6 +226,55 @@ async function run() {
         res.status(500).send("Error fetching sold stats");
       }
     });
+    app.get("/userPaymentHistory", async (req, res) => {
+      const email = req.query.email;
+      console.log("user payment", email);
+      const query = { email: email };
+      try {
+        const soldStats = await paymentsCollection
+          .aggregate([
+            {
+              $match: {
+                email: email,
+              },
+            },
+            {
+              $unwind: "$menuItemId",
+            },
+            {
+              $lookup: {
+                from: "menu",
+                let: { menuItemId: { $toObjectId: "$menuItemId" } },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: { $eq: ["$_id", "$$menuItemId"] },
+                    },
+                  },
+                ],
+                as: "menuItems",
+              },
+            },
+            {
+              $unwind: "$menuItems",
+            },
+            {
+              $group: {
+                _id: "$menuItems.category",
+                quantity: { $sum: 1 },
+                revenue: { $sum: "$menuItems.price" },
+              },
+            },
+          ])
+          .toArray();
+
+        console.log(soldStats);
+        res.send(soldStats);
+      } catch (error) {
+        console.error("Error fetching sold stats:", error);
+        res.status(500).send("Error fetching sold stats");
+      }
+    });
     app.get("/paymentHistory/:id", async (req, res) => {
       const email = req.params.id;
       console.log("email is payment history", email);
@@ -246,14 +295,13 @@ async function run() {
           "reservationData.userEmail": email,
         };
         const response = await reservationCollection.find(query).toArray();
-        console.log(response)
+        console.log(response);
         res.send(response);
       } catch (error) {
         console.error("Error fetching my bookings:", error);
         res.status(500).send("Internal server error");
       }
     });
-
 
     app.get("/paymentHistoryPurchaseDetails", async (req, res) => {
       const items = req.query.items;
@@ -262,11 +310,13 @@ async function run() {
       const objectIdArray = itemList.map(id => new ObjectId(id.trim()));
 
       // console.log(item)
-      const response = await menu_collection.find({
-        _id:{
-          $in:objectIdArray
-        }
-      }).toArray()
+      const response = await menu_collection
+        .find({
+          _id: {
+            $in: objectIdArray,
+          },
+        })
+        .toArray();
       // console.log(response)
       res.send(response);
     });
